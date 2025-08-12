@@ -191,6 +191,8 @@ from opentelemetry.semconv._incubating.attributes.http_attributes import (
     HTTP_SCHEME,
     HTTP_STATUS_CODE,
     HTTP_TARGET,
+    URL_PATH,
+    URL_QUERY,
 )
 from opentelemetry.semconv._incubating.attributes.net_attributes import (
     NET_PEER_IP,
@@ -205,6 +207,7 @@ from opentelemetry.util.http import (
     get_traced_request_attrs,
     normalise_request_header_name,
     normalise_response_header_name,
+    redact_query_parameters,
 )
 
 from .client import fetch_async  # pylint: disable=E0401
@@ -525,6 +528,12 @@ def _start_span(tracer, handler) -> _TraceContext:
         start_time=time_ns(),
         context_carrier=handler.request.headers,
         context_getter=textmap.default_getter,
+        attributes={
+            HTTP_METHOD: handler.request.method,
+            HTTP_HOST: handler.request.host,
+            URL_PATH: handler.request.path,
+            URL_QUERY: redact_query_parameters(handler.request.query),
+        },
     )
 
     if span.is_recording():
